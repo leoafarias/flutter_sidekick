@@ -22,10 +22,17 @@ import 'src/modules/settings/settings.utils.dart';
 import 'src/screens/error_db_screen.dart';
 import 'src/theme.dart';
 
-void main() async {
+Future main({
+  bool isTestMode = false,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
-  Hive.registerAdapter(SidekickSettingsAdapter());
-  Hive.registerAdapter(ProjectPathAdapter());
+  if (!Hive.isAdapterRegistered(SidekickSettingsAdapter().typeId)) {
+    Hive.registerAdapter(SidekickSettingsAdapter());
+  }
+  if (!Hive.isAdapterRegistered(ProjectPathAdapter().typeId)) {
+    Hive.registerAdapter(ProjectPathAdapter());
+  }
+
   final hiveDir = await getApplicationSupportDirectory();
 
   // This should only be necessary on the first run after 0.1.1, as DB location has changed.
@@ -44,6 +51,10 @@ void main() async {
     setWindowTitle(kAppTitle);
     setWindowMinSize(const Size(800, 500));
     setWindowMaxSize(Size.infinite);
+  }
+
+  if (isTestMode) {
+    return ProviderScope(child: FvmApp());
   }
 
   runApp(ProviderScope(child: FvmApp()));

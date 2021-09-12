@@ -1,0 +1,139 @@
+# Name of your workflow.
+name: Test (E2E)
+# Trigger the workflow on push or pull request.
+on: [push, pull_request]
+# A workflow run is made up of one or more jobs.
+jobs:
+  # id of job, a string that is unique to the "jobs" node above.
+  macos-e2e:
+    # Creates a build matrix for your jobs. You can define different
+    # variations of an environment to run each job in.
+    strategy:
+      # A set of different configurations of the virtual  
+      # environment.
+      matrix:
+        device:
+        - "macOS (macos)"
+      # When set to true, GitHub cancels all in-progress jobs if any        
+      # matrix job fails.
+      fail-fast: false
+    # The type of machine to run the job on.
+    runs-on: macos-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2.3.4
+
+    - name: Install FVM & Flutter
+      run: |
+        brew tap leoafarias/fvm
+        brew install fvm
+        fvm install stable
+        fvm doctor
+
+    - name: Setup Flutter SDK
+      uses: subosito/flutter-action@master
+
+    - name: Set Up XCode
+      uses: devbotsxyz/xcode-select@v1.1.0
+    
+    - name: Enable desktop
+      run: flutter config --enable-macos-desktop
+
+    - name: Run integration tests
+      timeout-minutes: 30
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        flutter doctor -v
+        flutter pub get
+        flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d macos
+
+  windows-e2e:
+    # Creates a build matrix for your jobs. You can define different
+    # variations of an environment to run each job in.
+    strategy:
+      # A set of different configurations of the virtual  
+      # environment.
+      matrix:
+        device:
+        - "Windows (windows)"
+      # When set to true, GitHub cancels all in-progress jobs if any        
+      # matrix job fails.
+      fail-fast: false
+    # The type of machine to run the job on.
+    runs-on: windows-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2.3.4
+
+    - uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: -h
+
+    - name: Install FVM & Flutter
+      run: |
+        choco install fvm
+        fvm install stable
+        fvm doctor
+
+    - name: Setup Flutter SDK
+      uses: subosito/flutter-action@master
+    
+    - name: Enable desktop
+      run: flutter config --enable-windows-desktop
+
+    - name: Run integration tests
+      timeout-minutes: 30
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        flutter doctor -v
+        flutter pub get
+        flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d windows
+
+  linux-e2e:
+    if: ${{ false }}
+    # Creates a build matrix for your jobs. You can define different
+    # variations of an environment to run each job in.
+    strategy:
+      # A set of different configurations of the virtual  
+      # environment.
+      matrix:
+        device:
+        - "Linux (linux)"
+      # When set to true, GitHub cancels all in-progress jobs if any        
+      # matrix job fails.
+      fail-fast: false
+    # The type of machine to run the job on.
+    runs-on: ubuntu-20.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2.3.4
+
+    - name: Install FVM & Flutter
+      run: |
+        brew tap leoafarias/fvm
+        brew install fvm
+        fvm install master
+        fvm doctor
+
+    - uses: subosito/flutter-action@master
+      with:
+        channel: master
+
+    - name: Install Linux build tools
+      run: sudo apt-get update && sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev
+
+    - name: Enable desktop
+      run: flutter config --enable-linux-desktop
+
+    - name: Run integration tests
+      timeout-minutes: 30
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        flutter pub get
+        flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart -d linux
